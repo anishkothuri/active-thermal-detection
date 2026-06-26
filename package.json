@@ -1,0 +1,12 @@
+{
+  "name": "cattle-thermal-detection",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prestart": "lsof -ti:3001,8001,5173,5174 | xargs kill -9 2>/dev/null || true",
+    "start": "concurrently --names \"API,ML,UI\" --prefix-colors \"cyan,yellow,magenta\" --kill-others-on-fail \"npm run dev --prefix server\" \"cd ml && python3 -m uvicorn main:app --host 0.0.0.0 --port 8001\" \"npm run dev --prefix client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

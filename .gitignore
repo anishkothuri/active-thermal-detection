@@ -1,0 +1,14 @@
+dataset/
+ml/models/
+node_modules/
+client/node_modules/
+server/node_modules/
+__pycache__/
+*.pyc
+*.pt
+*.pth
+.env
+.env.local
+dist/
+client/dist/
+.DS_Store
