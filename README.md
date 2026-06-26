@@ -1,127 +1,20 @@
 # Thermal Image Detection
 
-A full-stack computer vision web application for exploring and running real-time inference on a manually annotated thermal cattle dataset. The model was fine-tuned using YOLOv8 on Apple Silicon and achieves detection across 5 body-part classes specific to cattle thermal imaging.
+A full-stack computer vision web application for exploring and running real-time inference on a manually annotated thermal cattle dataset. Fine-tuned YOLOv8 detects across 5 body-part classes specific to cattle thermal imaging.
 
-![Stack](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)
-![Stack](https://img.shields.io/badge/Node.js-18-339933?style=flat&logo=node.js)
-![Stack](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python)
-![Stack](https://img.shields.io/badge/YOLOv8-Ultralytics-FF6F00?style=flat)
-![License](https://img.shields.io/badge/Dataset-CC%20BY%204.0-lightgrey?style=flat)
+**Features:**
+- **Dataset Explorer** — browse all 2,024 annotated thermal images with class filtering, split selection, and a zoom-enabled image modal
+- **Live Detection** — drag-and-drop an image to run server-side YOLOv8 inference and view bounding boxes with confidence scores in real time
 
 ---
 
-## Overview
+## Demo
 
-Thermal imaging of livestock is used in agriculture and veterinary research to monitor body temperature, detect illness, and assess welfare. This project provides:
-
-1. **Dataset Explorer** — an interactive browser for all 2,024 annotated thermal images with color-coded bounding boxes, class filtering, split selection, and a zoom-enabled image modal
-2. **Live Detection** — a drag-and-drop upload interface that runs fine-tuned YOLOv8 inference server-side and renders detections with confidence scores in real time
+<!-- Insert video demo here -->
 
 ---
 
-## Dataset
-
-2,024 thermal cattle images manually annotated across 5 bounding box classes, exported in YOLOv8 format via Roboflow.
-
-| Class | Description | Annotations |
-|-------|-------------|-------------|
-| **Animal** | Full cattle body outline | 1,046 |
-| **Body** | Partial torso / body region | 413 |
-| **Eye** | Eye region | 433 |
-| **Face** | Facial region | 1,084 |
-| **Rectum** | Rear/rectal region (used in thermal welfare assessment) | 207 |
-
-**Split distribution:**
-
-| Split | Images |
-|-------|--------|
-| Train | 1,413 |
-| Validation | 200 |
-| Test | 411 |
-| **Total** | **2,024** |
-
-Images are 160×120px PNG, captured as video frames from a thermal camera. Naming convention: `frame_{number}_{sex}{id}_png.rf.{hash}.png`
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 18, Vite 5, HTML Canvas (bounding box rendering) |
-| **Backend** | Node.js 18, Express, Multer |
-| **ML Service** | Python 3.9+, FastAPI, Ultralytics YOLOv8, PyTorch (MPS/CUDA/CPU) |
-| **Concurrency** | `concurrently` — single `npm start` launches all three services |
-
----
-
-## Features
-
-### Dataset Explorer
-- Browse all 2,024 thermal images in a responsive grid
-- Filter by detection class (Animal, Body, Eye, Face, Rectum)
-- Switch between train / test / valid splits
-- Click any image to open a full-size modal with:
-  - Bounding boxes drawn on an HTML Canvas overlay
-  - Zoom slider (1×–10×) for inspecting small-resolution thermal frames
-  - Annotation list with class labels
-
-### Live Detection
-- Drag-and-drop or click-to-browse image upload
-- Adjustable confidence threshold slider
-- Server-side YOLOv8 inference via Python FastAPI
-- Results rendered as bounding boxes on canvas with per-class confidence bars
-- Detection sidebar showing class, confidence score, and model metadata
-
----
-
-## Project Structure
-
-```
-cattle-thermal-detection/
-├── client/                  # React + Vite frontend (port 5173)
-│   └── src/
-│       ├── components/
-│       │   ├── DatasetExplorer/
-│       │   │   ├── DatasetExplorer.jsx   # Stats, filters, grid orchestration
-│       │   │   ├── ClassFilter.jsx        # Class toggle pills
-│       │   │   ├── ImageGrid.jsx          # Responsive thumbnail grid
-│       │   │   ├── ImageModal.jsx         # Full-size view with zoom + canvas
-│       │   │   ├── BoundingBoxCanvas.jsx  # YOLO → pixel coordinate canvas renderer
-│       │   │   └── Pagination.jsx
-│       │   └── LiveDetection/
-│       │       ├── LiveDetection.jsx      # Upload, controls, results layout
-│       │       ├── ImageUploader.jsx      # Drag-and-drop dropzone
-│       │       └── DetectionResult.jsx    # Canvas overlay for inference results
-│       └── Navbar.jsx
-│
-├── server/                  # Node.js + Express API (port 3001)
-│   └── src/
-│       ├── routes/
-│       │   ├── images.js    # Image list (paginated, filtered) + file serving
-│       │   ├── labels.js    # Annotation JSON per image
-│       │   ├── stats.js     # Dataset statistics
-│       │   └── detect.js    # Proxy: Node → Python inference service
-│       └── utils/
-│           └── datasetIndex.js  # In-memory index built at startup
-│
-├── ml/                      # Python FastAPI inference service (port 8001)
-│   ├── main.py              # FastAPI app + /detect endpoint
-│   ├── inference.py         # Model loading + YOLOv8 prediction logic
-│   ├── train.py             # Training script (auto-detects MPS/CUDA/CPU)
-│   ├── requirements.txt
-│   └── models/              # Trained weights go here (gitignored)
-│       └── best.pt          # Fine-tuned model (generated by train.py)
-│
-├── dataset/                 # Extracted images + labels (gitignored — 73 MB)
-├── package.json             # Root — runs all services via `npm start`
-├── setup.sh                 # One-command install + dataset extraction
-└── README.md
-```
-
----
-
-## Setup
+## Getting Started
 
 ### Prerequisites
 
@@ -131,221 +24,26 @@ cattle-thermal-detection/
 
 ### Install
 
-From inside `cattle-thermal-detection/`:
-
 ```bash
+cd active-thermal-detection
 chmod +x setup.sh
 ./setup.sh
 ```
 
-This will:
-- Extract all 2,024 images and labels into `dataset/`
-- Install npm packages for root, `server/`, and `client/`
-- Install all Python dependencies (`ultralytics`, `fastapi`, `uvicorn`, `pillow`, etc.)
-
----
-
-## Running the App
-
-### Single command
+### Run
 
 ```bash
 npm start
 ```
 
-Starts all three services in parallel with labeled output:
+This starts all three services in parallel:
 
-| Label | Service | Port |
-|-------|---------|------|
-| `[API]` | Node.js backend | 3001 |
-| `[ML]` | Python inference service | 8001 |
-| `[UI]` | React frontend | 5173 |
+| Service | Port |
+|---|---|
+| React frontend | 5173 |
+| Node.js API | 3001 |
+| Python inference (YOLOv8) | 8001 |
 
-Open **[http://localhost:5173](http://localhost:5173)** in your browser.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 Press `Ctrl+C` to stop all services.
-
-> **Note:** On first run the ML service downloads `yolov8n.pt` (~6 MB). If `ml/models/best.pt` exists (after training), it loads that instead.
-
----
-
-### Manual start (3 terminals)
-
-**Terminal 1 — API server**
-```bash
-cd server && npm run dev
-```
-
-**Terminal 2 — ML inference service**
-```bash
-cd ml && python3 -m uvicorn main:app --host 0.0.0.0 --port 8001
-```
-
-**Terminal 3 — React frontend**
-```bash
-cd client && npm run dev
-```
-
----
-
-## Training
-
-The `train.py` script fine-tunes YOLOv8 on the cattle thermal dataset. It auto-detects the best available device (MPS → CUDA → CPU).
-
-```bash
-cd ml
-
-# Apple Silicon GPU (MPS) — recommended on Mac
-python3 train.py --epochs 50 --device mps
-
-# NVIDIA GPU
-python3 train.py --epochs 50 --device 0
-
-# CPU fallback
-python3 train.py --epochs 50 --device cpu
-```
-
-After training completes, `best.pt` is automatically copied to `ml/models/`. Restart the ML service to activate it.
-
-### Training options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--epochs` | 50 | Number of training epochs |
-| `--model` | `yolov8n.pt` | Base YOLOv8 variant (`n` / `s` / `m` / `l` / `x`) |
-| `--batch` | 16 | Batch size |
-| `--imgsz` | 640 | Input resolution |
-| `--device` | auto | `mps`, `cpu`, or GPU index (`0`) |
-
-### Model architecture
-
-The base model is **YOLOv8n** (nano, 3M parameters, 8.2 GFLOPs), fine-tuned on the 5-class cattle detection task. Training runs for 50 epochs with AdamW optimizer and cosine LR scheduling, using the Roboflow-exported `data.yaml` for split paths.
-
----
-
-## API Reference
-
-All endpoints are served by the Node.js backend on port 3001.
-
-### `GET /api/images`
-
-Returns a paginated, filtered list of images.
-
-| Query param | Type | Default | Description |
-|-------------|------|---------|-------------|
-| `split` | string | — | `train`, `test`, or `valid` |
-| `classes` | string | — | Comma-separated class IDs (e.g. `0,2,3`) |
-| `page` | number | `1` | Page number |
-| `limit` | number | `24` | Results per page (max 100) |
-
-**Response:**
-```json
-{
-  "items": [
-    {
-      "split": "train",
-      "filename": "frame_0017_female3_png.rf.abc123.png",
-      "classes": [0, 3]
-    }
-  ],
-  "total": 705,
-  "page": 1,
-  "totalPages": 30,
-  "limit": 24
-}
-```
-
----
-
-### `GET /api/images/:split/:filename`
-
-Streams the image file directly from `dataset/`.
-
----
-
-### `GET /api/labels/:split/:filename`
-
-Returns parsed YOLOv8 annotations for a single image.
-
-**Response:**
-```json
-[
-  { "class_id": 0, "class_name": "Animal", "x": 0.197, "y": 0.594, "w": 0.270, "h": 0.442 },
-  { "class_id": 3, "class_name": "Face",   "x": 0.399, "y": 0.470, "w": 0.260, "h": 0.352 }
-]
-```
-
-Coordinates are normalized `[0, 1]` in YOLO format: `x_center`, `y_center`, `width`, `height`.
-
----
-
-### `GET /api/stats`
-
-Returns dataset-wide statistics.
-
-**Response:**
-```json
-{
-  "total": 2024,
-  "splits": { "train": 1413, "test": 411, "valid": 200 },
-  "classCounts": { "Animal": 1046, "Body": 413, "Eye": 433, "Face": 1084, "Rectum": 207 },
-  "classNames": ["Animal", "Body", "Eye", "Face", "Rectum"]
-}
-```
-
----
-
-### `POST /api/detect`
-
-Runs YOLOv8 inference on an uploaded image. Node proxies the request to the Python FastAPI service.
-
-**Request:** `multipart/form-data`, field `image` (PNG/JPG, max 20 MB)
-
-**Query param:** `conf` — confidence threshold (default `0.25`)
-
-**Response:**
-```json
-{
-  "detections": [
-    {
-      "class_id": 0,
-      "class_name": "Animal",
-      "confidence": 0.914,
-      "bbox": [45, 102, 320, 487]
-    }
-  ],
-  "image_width": 480,
-  "image_height": 270,
-  "is_custom_model": true,
-  "note": null
-}
-```
-
-`bbox` values are absolute pixel coordinates `[x1, y1, x2, y2]`.
-
----
-
-## How Bounding Boxes Are Rendered
-
-The frontend uses the HTML Canvas API — no external charting or annotation library.
-
-**Dataset Explorer (normalized YOLO coords → pixels):**
-```
-x1 = (x_center - width/2)  × canvas_width
-y1 = (y_center - height/2) × canvas_height
-```
-
-**Live Detection (absolute pixel coords → scaled):**
-```
-px1 = x1 × (canvas_display_width  / image_source_width)
-py1 = y1 × (canvas_display_height / image_source_height)
-```
-
-The canvas is always positioned as `inline-block` directly over the `<img>` element to prevent coordinate drift.
-
----
-
-## License
-
-- **Dataset:** CC BY 4.0 — sourced via Roboflow
-- **Code:** MIT
