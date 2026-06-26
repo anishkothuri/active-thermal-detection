@@ -10,7 +10,8 @@ A full-stack computer vision web application for exploring and running real-time
 
 ## Demo
 
-<!-- Insert video demo here -->
+<img width="1402" height="837" alt="Active Thermal Detection Project" src="https://github.com/user-attachments/assets/fbea8798-d018-4e02-8f7e-35f0876335f2" />
+
 
 ---
 
