@@ -1,4 +1,4 @@
-# Cattle Thermal Image Detection
+# Thermal Image Detection
 
 A full-stack computer vision web application for exploring and running real-time inference on a manually annotated thermal cattle dataset. The model was fine-tuned using YOLOv8 on Apple Silicon and achieves detection across 5 body-part classes specific to cattle thermal imaging.
 
