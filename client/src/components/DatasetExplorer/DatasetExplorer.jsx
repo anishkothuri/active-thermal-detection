@@ -3,6 +3,7 @@ import ClassFilter from './ClassFilter.jsx';
 import ImageGrid from './ImageGrid.jsx';
 import ImageModal from './ImageModal.jsx';
 import Pagination from './Pagination.jsx';
+import { getStats, queryImages } from '../../lib/dataset.js';
 
 const ALL_CLASSES = new Set([0, 1, 2, 3, 4]);
 const SPLITS = ['train', 'test', 'valid'];
@@ -33,14 +34,12 @@ export default function DatasetExplorer() {
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    fetch('/api/stats').then((r) => r.json()).then(setStats).catch(() => {});
+    getStats().then(setStats).catch(() => {});
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    const classParam = [...activeClasses].join(',');
-    fetch(`/api/images?split=${split}&classes=${classParam}&page=${page}&limit=${LIMIT}`)
-      .then((r) => r.json())
+    queryImages({ split, classes: [...activeClasses], page, limit: LIMIT })
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [split, activeClasses, page]);
@@ -57,18 +56,28 @@ export default function DatasetExplorer() {
 
   return (
     <div>
-      {/* Hero */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--text)', marginBottom: 6 }}>
           Dataset Explorer
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 560 }}>
-          Browse 2,024 manually annotated thermal cattle images across 5 body-part detection classes,
-          fine-tuned with YOLOv8 on Apple Silicon.
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 620 }}>
+          2,024 thermal cattle images, captured frame by frame with a real thermal camera and
+          manually annotated across 5 body part classes. A learning project spanning the full pipeline,
+          data ingestion, model development, and training statistics.
         </p>
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          {['1 · Data ingestion', '2 · Model development', '3 · Model statistics'].map((step) => (
+            <span key={step} style={{
+              fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 999,
+              background: 'var(--surface2)', border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+            }}>
+              {step}
+            </span>
+          ))}
+        </div>
       </div>
 
-      {/* Stats */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 28 }}>
           {STAT_META.map(({ key, label, icon, color, isSplit }) => {
@@ -109,7 +118,6 @@ export default function DatasetExplorer() {
         </div>
       )}
 
-      {/* Controls */}
       <div style={{
         display: 'flex', gap: 12, flexWrap: 'wrap',
         alignItems: 'center', marginBottom: 20,
@@ -118,7 +126,6 @@ export default function DatasetExplorer() {
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
       }}>
-        {/* Split selector */}
         <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', borderRadius: 8, padding: 3 }}>
           {SPLITS.map((s) => (
             <button
@@ -142,7 +149,6 @@ export default function DatasetExplorer() {
         <ClassFilter activeClasses={activeClasses} onToggle={toggleClass} />
       </div>
 
-      {/* Count */}
       <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 16, fontWeight: 500 }}>
         {loading ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -153,14 +159,7 @@ export default function DatasetExplorer() {
         ) : null}
       </div>
 
-      {/* Grid */}
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-          <Spinner size={32} />
-        </div>
-      ) : (
-        <ImageGrid images={data?.items ?? []} onSelect={setSelectedImage} />
-      )}
+      {loading ? <SkeletonGrid /> : <ImageGrid images={data?.items ?? []} onSelect={setSelectedImage} />}
 
       <Pagination page={data?.page ?? 1} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
 
@@ -181,6 +180,30 @@ function Spinner({ size = 16 }) {
       animation: 'spin 0.7s linear infinite',
     }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+      gap: 14,
+    }}>
+      {Array.from({ length: LIMIT }).map((_, i) => (
+        <div key={i} style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          <div style={{ aspectRatio: '4/3', background: 'var(--surface2)', animation: 'pulse 1.4s ease-in-out infinite' }} />
+          <div style={{ padding: '10px 12px' }}>
+            <div style={{ height: 10, width: '70%', borderRadius: 4, background: 'var(--surface2)', marginBottom: 8, animation: 'pulse 1.4s ease-in-out infinite' }} />
+            <div style={{ height: 14, width: '40%', borderRadius: 999, background: 'var(--surface2)', animation: 'pulse 1.4s ease-in-out infinite' }} />
+          </div>
+        </div>
+      ))}
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }`}</style>
     </div>
   );
 }

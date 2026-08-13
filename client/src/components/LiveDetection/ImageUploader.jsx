@@ -5,7 +5,7 @@ export default function ImageUploader({ onFile }) {
   const [dragging, setDragging] = useState(false);
 
   const handleFile = useCallback((file) => {
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file || !(file.type.startsWith('image/') || file.type.startsWith('video/'))) return;
     onFile(file);
   }, [onFile]);
 
@@ -48,7 +48,7 @@ export default function ImageUploader({ onFile }) {
       </div>
 
       <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 8 }}>
-        {dragging ? 'Release to upload' : 'Drop a thermal image here'}
+        {dragging ? 'Release to upload' : 'Drop a thermal image or video here'}
       </div>
       <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
         or click to browse your files
@@ -59,13 +59,13 @@ export default function ImageUploader({ onFile }) {
         background: 'var(--surface3)', border: '1px solid var(--border2)',
         color: 'var(--text-muted)', fontSize: 11, fontWeight: 500,
       }}>
-        PNG · JPG · JPEG · up to 20 MB
+        PNG · JPG · JPEG up to 20 MB or MP4 · MOV up to 100 MB
       </div>
 
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         style={{ display: 'none' }}
         onChange={(e) => handleFile(e.target.files[0])}
       />

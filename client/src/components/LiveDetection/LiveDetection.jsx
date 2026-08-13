@@ -1,7 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import ImageUploader from './ImageUploader.jsx';
 import DetectionResult from './DetectionResult.jsx';
+import VideoDetectionResult from './VideoDetectionResult.jsx';
+import SampleGallery from './SampleGallery.jsx';
+import ModelInsights from './ModelInsights.jsx';
 import { CLASSES } from '../DatasetExplorer/ClassFilter.jsx';
+import { detectImage, detectVideo } from '../../lib/detect.js';
 
 const CLASS_MAP = Object.fromEntries(CLASSES.map((c) => [c.id, c]));
 
@@ -10,8 +14,13 @@ export default function LiveDetection() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [result, setResult]       = useState(null);
   const [loading, setLoading]     = useState(false);
+  const [progress, setProgress]   = useState(null);
   const [error, setError]         = useState(null);
   const [conf, setConf]           = useState(0.25);
+  const [currentFrame, setCurrentFrame] = useState(null);
+  const lastFrameRef = useRef(null);
+
+  const isVideo = file?.type.startsWith('video/');
 
   const handleFile = useCallback((f) => {
     setFile(f);
@@ -19,42 +28,51 @@ export default function LiveDetection() {
     setPreviewUrl(URL.createObjectURL(f));
     setResult(null);
     setError(null);
+    setCurrentFrame(null);
   }, [previewUrl]);
+
+  const handleFrameChange = useCallback((frame) => {
+    if (frame === lastFrameRef.current) return;
+    lastFrameRef.current = frame;
+    setCurrentFrame(frame);
+  }, []);
 
   const handleDetect = async () => {
     if (!file) return;
     setLoading(true);
     setError(null);
     setResult(null);
-
-    const form = new FormData();
-    form.append('image', file);
+    setProgress(null);
 
     try {
-      const res = await fetch(`/api/detect?conf=${conf}`, { method: 'POST', body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Detection failed');
+      const data = isVideo
+        ? await detectVideo(file, conf, (done, total) => setProgress({ done, total }))
+        : await detectImage(file, conf);
       setResult(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
+  const sidebarDetections = isVideo ? (currentFrame?.detections ?? []) : (result?.detections ?? []);
+
   return (
     <div>
-      {/* Hero */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 6 }}>
           Live Detection
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 520 }}>
-          Upload a thermal cattle image and run inference with the fine-tuned YOLOv8 model trained on this dataset.
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 560 }}>
+          Upload a thermal cattle image or video and run inference with the fine tuned YOLOv8 model,
+          trained on captured thermal camera footage. Model statistics below reflect real training runs.
         </p>
       </div>
 
-      {/* Controls bar */}
+      <ModelInsights />
+
       {file && (
         <div style={{
           display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
@@ -94,11 +112,16 @@ export default function LiveDetection() {
               display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            {loading ? <><Spinner />Running…</> : '▶ Run Detection'}
+            {loading ? (
+              <>
+                <Spinner />
+                {isVideo ? (progress ? `Analyzing frame ${progress.done} of ${progress.total}…` : 'Analyzing…') : 'Running…'}
+              </>
+            ) : '▶ Run Detection'}
           </button>
 
           <button
-            onClick={() => { setFile(null); setPreviewUrl(null); setResult(null); setError(null); }}
+            onClick={() => { setFile(null); setPreviewUrl(null); setResult(null); setError(null); setCurrentFrame(null); }}
             style={{
               padding: '9px 18px', borderRadius: 9,
               border: '1px solid var(--border2)',
@@ -108,7 +131,7 @@ export default function LiveDetection() {
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
-            ↩ New Image
+            ↩ New File
           </button>
         </div>
       )}
@@ -124,15 +147,33 @@ export default function LiveDetection() {
       )}
 
       {!file ? (
-        <ImageUploader onFile={handleFile} />
+        <>
+          <ImageUploader onFile={handleFile} />
+          <SampleGallery onSelect={handleFile} />
+        </>
       ) : (
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* Image */}
           <div style={{ flex: '1 1 420px', minWidth: 0 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 10 }}>
               {result ? 'Detection Result' : 'Preview'}
             </div>
-            {result ? (
+
+            {isVideo ? (
+              result ? (
+                <VideoDetectionResult
+                  videoUrl={previewUrl}
+                  frames={result.frames}
+                  videoWidth={result.video_width}
+                  videoHeight={result.video_height}
+                  onFrameChange={handleFrameChange}
+                />
+              ) : (
+                <video
+                  src={previewUrl} controls
+                  style={{ width: 'min(560px, 100%)', height: 'auto', display: 'block', borderRadius: 12, border: '1px solid var(--border)', background: '#000' }}
+                />
+              )
+            ) : result ? (
               <DetectionResult
                 imageUrl={previewUrl}
                 detections={result.detections}
@@ -142,31 +183,30 @@ export default function LiveDetection() {
             ) : (
               <img
                 src={previewUrl} alt="Preview"
-                style={{ maxWidth: '100%', maxHeight: '65vh', borderRadius: 12, objectFit: 'contain', border: '1px solid var(--border)' }}
+                style={{ width: 'min(560px, 100%)', height: 'auto', display: 'block', borderRadius: 12, imageRendering: 'pixelated', border: '1px solid var(--border)' }}
               />
             )}
           </div>
 
-          {/* Results sidebar */}
           {result && (
             <div style={{ flex: '0 0 260px' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 10 }}>
-                Detections ({result.detections.length})
+                {isVideo ? `Current frame · ${sidebarDetections.length}` : `Detections · ${sidebarDetections.length}`}
               </div>
 
-              {result.detections.length === 0 ? (
+              {sidebarDetections.length === 0 ? (
                 <div style={{
                   padding: '24px 20px', borderRadius: 10,
                   background: 'var(--surface)', border: '1px solid var(--border)',
                   color: 'var(--text-muted)', fontSize: 13, textAlign: 'center',
                 }}>
-                  No detections above {Math.round(conf * 100)}% confidence.
-                  <br /><br />
-                  Try lowering the threshold.
+                  {isVideo
+                    ? 'No detections in this frame.'
+                    : <>No detections above {Math.round(conf * 100)}% confidence.<br /><br />Try lowering the threshold.</>}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {result.detections.map((det, i) => {
+                  {sidebarDetections.map((det, i) => {
                     const cls = CLASS_MAP[det.class_id] ?? { color: '#888', bg: 'rgba(128,128,128,0.1)', name: det.class_name };
                     const pct = Math.round(det.confidence * 100);
                     return (
@@ -185,7 +225,6 @@ export default function LiveDetection() {
                             {pct}%
                           </span>
                         </div>
-                        {/* Confidence bar */}
                         <div style={{ height: 4, background: 'var(--surface3)', borderRadius: 2, overflow: 'hidden' }}>
                           <div style={{
                             height: '100%', width: `${pct}%`,
@@ -199,16 +238,27 @@ export default function LiveDetection() {
                 </div>
               )}
 
-              {/* Meta */}
               <div style={{
                 marginTop: 16, padding: '12px 16px', borderRadius: 10,
                 background: 'var(--surface)', border: '1px solid var(--border)',
                 fontSize: 12, color: 'var(--text-muted)',
                 display: 'flex', flexDirection: 'column', gap: 4,
               }}>
-                <div><span style={{ color: 'var(--text-dim)' }}>Image size</span> {result.image_width}×{result.image_height}px</div>
-                <div><span style={{ color: 'var(--text-dim)' }}>Model</span> YOLOv8n (fine-tuned)</div>
-                <div><span style={{ color: 'var(--text-dim)' }}>Threshold</span> {Math.round(conf * 100)}%</div>
+                {isVideo ? (
+                  <>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Resolution</span> {result.video_width}×{result.video_height}px</div>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Duration</span> {result.duration}s</div>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Analyzed at</span> {result.sampled_fps} fps across {result.frames.length} frames</div>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Model</span> YOLOv8n, fine tuned</div>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Threshold</span> {Math.round(conf * 100)}%</div>
+                  </>
+                ) : (
+                  <>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Image size</span> {result.image_width}×{result.image_height}px</div>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Model</span> YOLOv8n, fine tuned</div>
+                    <div><span style={{ color: 'var(--text-dim)' }}>Threshold</span> {Math.round(conf * 100)}%</div>
+                  </>
+                )}
               </div>
 
               {result.note && (

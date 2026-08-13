@@ -26,7 +26,7 @@ def auto_device():
     return "cpu"
 
 
-def train(epochs: int, model_name: str, batch: int, imgsz: int, device: str):
+def train(epochs: int, model_name: str, batch: int, imgsz: int, device: str, patience: int, run_name: str):
     if not DATA_YAML.exists():
         raise FileNotFoundError(
             f"Dataset config not found at {DATA_YAML}. Run setup.sh first to extract the dataset."
@@ -40,12 +40,26 @@ def train(epochs: int, model_name: str, batch: int, imgsz: int, device: str):
         batch=batch,
         imgsz=imgsz,
         device=device,
+        patience=patience,
         project=str(BASE_DIR / "runs" / "detect"),
-        name="cattle_thermal",
+        name=run_name,
         exist_ok=True,
+        # thermal images are colorized to encode temperature, not scene
+        # color, so shrink hue jitter but keep brightness and contrast
+        # jitter for camera calibration variance, and lean on geometric
+        # augmentation for generalization
+        hsv_h=0.0,
+        hsv_s=0.5,
+        hsv_v=0.4,
+        degrees=5.0,
+        translate=0.1,
+        scale=0.3,
+        fliplr=0.5,
+        close_mosaic=15,
+        cos_lr=True,
     )
 
-    best_weights = BASE_DIR / "runs" / "detect" / "cattle_thermal" / "weights" / "best.pt"
+    best_weights = BASE_DIR / "runs" / "detect" / run_name / "weights" / "best.pt"
     if best_weights.exists():
         dest = BASE_DIR / "models" / "best.pt"
         dest.parent.mkdir(exist_ok=True)
@@ -60,12 +74,16 @@ def train(epochs: int, model_name: str, batch: int, imgsz: int, device: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train YOLOv8 on cattle thermal dataset")
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--model", type=str, default="yolov8n.pt")
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--device", type=str, default=auto_device(),
-                        help="Training device: mps, cpu, 0 (CUDA). Auto-detected if omitted.")
+                        help="Training device: mps, cpu, or 0 for CUDA. Auto detected if omitted.")
+    parser.add_argument("--patience", type=int, default=30,
+                        help="Stop early after this many epochs with no val improvement.")
+    parser.add_argument("--name", type=str, default="cattle_thermal_v2",
+                        help="Run name under ml/runs/detect/.")
     args = parser.parse_args()
 
-    train(args.epochs, args.model, args.batch, args.imgsz, args.device)
+    train(args.epochs, args.model, args.batch, args.imgsz, args.device, args.patience, args.name)

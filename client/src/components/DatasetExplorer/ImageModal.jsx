@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import BoundingBoxCanvas from './BoundingBoxCanvas.jsx';
+import { getLabelAnnotations, imageUrl } from '../../lib/dataset.js';
 
 export default function ImageModal({ image, activeClasses, onClose }) {
   const [annotations, setAnnotations] = useState([]);
@@ -7,8 +8,7 @@ export default function ImageModal({ image, activeClasses, onClose }) {
   const [zoom, setZoom] = useState(4);
 
   useEffect(() => {
-    fetch(`/api/labels/${image.split}/${image.filename}`)
-      .then((r) => r.json())
+    getLabelAnnotations(image.split, image.filename)
       .then(setAnnotations)
       .catch(() => setAnnotations([]));
   }, [image]);
@@ -24,7 +24,6 @@ export default function ImageModal({ image, activeClasses, onClose }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  // Compute displayed pixel dimensions directly from zoom — no need to measure DOM
   const displayW = naturalSize.w ? Math.round(naturalSize.w * zoom) : 0;
   const displayH = naturalSize.h ? Math.round(naturalSize.h * zoom) : 0;
 
@@ -53,7 +52,6 @@ export default function ImageModal({ image, activeClasses, onClose }) {
           overflow: 'hidden',
         }}
       >
-        {/* Header */}
         <div style={{
           padding: '14px 20px',
           borderBottom: '1px solid var(--border)',
@@ -71,7 +69,6 @@ export default function ImageModal({ image, activeClasses, onClose }) {
             </div>
           </div>
 
-          {/* Zoom slider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Zoom</span>
             <input
@@ -101,7 +98,6 @@ export default function ImageModal({ image, activeClasses, onClose }) {
           </button>
         </div>
 
-        {/* Scrollable image area */}
         <div style={{
           flex: 1,
           overflow: 'auto',
@@ -111,14 +107,9 @@ export default function ImageModal({ image, activeClasses, onClose }) {
           padding: 20,
           minHeight: 0,
         }}>
-          {/*
-            inline-block wrapper ensures the canvas covers exactly the image.
-            We set explicit px width/height on the img so displayW/displayH
-            match the actual rendered size — no DOM measurement needed.
-          */}
           <div style={{ position: 'relative', display: 'inline-block', lineHeight: 0, flexShrink: 0 }}>
             <img
-              src={`/api/images/${image.split}/${image.filename}`}
+              src={imageUrl(image.split, image.filename)}
               alt={image.filename}
               onLoad={onImgLoad}
               style={{
@@ -139,7 +130,6 @@ export default function ImageModal({ image, activeClasses, onClose }) {
           </div>
         </div>
 
-        {/* Annotations footer */}
         {annotations.length > 0 && (
           <div style={{
             padding: '10px 20px',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Navbar from './components/Navbar.jsx';
+import Footer from './components/Footer.jsx';
 import DatasetExplorer from './components/DatasetExplorer/DatasetExplorer.jsx';
 import LiveDetection from './components/LiveDetection/LiveDetection.jsx';
 
@@ -15,8 +16,12 @@ export default function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar activeTab={activeTab} tabs={TABS} onTabChange={setActiveTab} />
       <main style={{ flex: 1, padding: '32px 24px', maxWidth: 1440, margin: '0 auto', width: '100%' }}>
-        {activeTab === 'explorer' ? <DatasetExplorer /> : <LiveDetection />}
+        <div key={activeTab} style={{ animation: 'fadeIn 0.25s ease' }}>
+          {activeTab === 'explorer' ? <DatasetExplorer /> : <LiveDetection />}
+        </div>
+        <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       </main>
+      <Footer />
     </div>
   );
 }

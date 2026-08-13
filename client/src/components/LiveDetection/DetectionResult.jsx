@@ -60,12 +60,15 @@ export default function DetectionResult({ imageUrl, detections, imageWidth, imag
   }, [detections, imageWidth, imageHeight]);
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%' }}>
+    <div style={{ position: 'relative', display: 'block', width: 'min(560px, 100%)' }}>
       <img
         ref={imgRef}
         src={imageUrl}
         alt="Detection result"
-        style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', borderRadius: 8 }}
+        style={{
+          width: '100%', height: 'auto', display: 'block', borderRadius: 8,
+          imageRendering: 'pixelated', background: '#000',
+        }}
       />
       <canvas
         ref={canvasRef}

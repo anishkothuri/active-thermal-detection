@@ -23,7 +23,7 @@ export default function BoundingBoxCanvas({ annotations, activeClasses, containe
     for (const ann of filtered) {
       const color = CLASS_COLOR[ann.class_id] ?? '#ffffff';
 
-      // YOLO normalized (x_center, y_center, w, h) → pixel coords
+      // YOLO stores normalized x_center y_center w h, convert to pixel coords
       const x1 = (ann.x - ann.w / 2) * containerWidth;
       const y1 = (ann.y - ann.h / 2) * containerHeight;
       const bw = ann.w * containerWidth;
@@ -33,7 +33,6 @@ export default function BoundingBoxCanvas({ annotations, activeClasses, containe
       ctx.lineWidth = 2;
       ctx.strokeRect(x1, y1, bw, bh);
 
-      // Label background
       const label = ann.class_name;
       ctx.font = 'bold 11px sans-serif';
       const tw = ctx.measureText(label).width + 8;

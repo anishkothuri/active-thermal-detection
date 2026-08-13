@@ -12,7 +12,6 @@ export default function Navbar({ activeTab, tabs, onTabChange }) {
       zIndex: 100,
       backdropFilter: 'blur(12px)',
     }}>
-      {/* Brand */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 0', flexShrink: 0 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 9,
@@ -36,7 +35,6 @@ export default function Navbar({ activeTab, tabs, onTabChange }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: 2 }}>
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
@@ -66,7 +64,6 @@ export default function Navbar({ activeTab, tabs, onTabChange }) {
         })}
       </div>
 
-      {/* Right badge */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           padding: '5px 12px', borderRadius: 999,

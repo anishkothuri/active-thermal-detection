@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CLASSES } from './ClassFilter.jsx';
+import { imageUrl } from '../../lib/dataset.js';
 
 const CLASS_MAP = Object.fromEntries(CLASSES.map((c) => [c.id, c]));
 
@@ -48,10 +49,9 @@ function ImageCard({ img, onSelect }) {
         transition: 'all 0.2s ease',
       }}
     >
-      {/* Thumbnail */}
       <div style={{ position: 'relative', aspectRatio: '4/3', background: '#000', overflow: 'hidden' }}>
         <img
-          src={`/api/images/${img.split}/${img.filename}`}
+          src={imageUrl(img.split, img.filename)}
           alt={img.filename}
           loading="lazy"
           style={{
@@ -60,7 +60,6 @@ function ImageCard({ img, onSelect }) {
             transition: 'transform 0.3s ease',
           }}
         />
-        {/* Split badge */}
         <div style={{
           position: 'absolute', top: 8, right: 8,
           padding: '2px 8px', borderRadius: 999,
@@ -72,7 +71,6 @@ function ImageCard({ img, onSelect }) {
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{ padding: '10px 12px' }}>
         <div style={{
           fontSize: 11, color: 'var(--text-muted)',

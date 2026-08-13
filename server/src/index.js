@@ -5,6 +5,7 @@ import imagesRouter from './routes/images.js';
 import labelsRouter from './routes/labels.js';
 import statsRouter from './routes/stats.js';
 import detectRouter from './routes/detect.js';
+import modelInfoRouter from './routes/modelInfo.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,6 +17,7 @@ app.use('/api/images', imagesRouter);
 app.use('/api/labels', labelsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/detect', detectRouter);
+app.use('/api/model-info', modelInfoRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
